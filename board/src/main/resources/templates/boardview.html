@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세 페이지</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .content {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .button-group {
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            margin-right: 10px;
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .button-secondary {
+            background-color: #6c757d;
+        }
+
+        .button-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .button-delete {
+            background-color: #dc3545;
+        }
+
+        .button-delete:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 th:text="${board.title}"></h1>
+        <div class="content">
+            <p th:text="${board.content}"></p>
+        </div>
+
+        <div class="button-group">
+            <form th:action="@{${board.filepath}}" method="get" style="display:inline;">
+                <button class="button" type="submit">사진 보기</button>
+            </form>
+            
+            <div th:if="${currentUser != null && board != null && board.author != null && currentUser.id == board.author.id}">
+            <form th:action="@{/board/delete}" method="post" style="display:inline;">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <input type="hidden" name="id" th:value="${board.id}"/>
+                <button class="button button-delete" type="submit">글 삭제</button>
+            </form>
+
+            <form th:action="@{/board/modify/{id}(id=${board.id})}" method="get" style="display:inline;">
+                <button class="button button-secondary" type="submit">글 수정</button>
+            </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

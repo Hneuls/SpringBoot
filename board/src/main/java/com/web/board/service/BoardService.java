@@ -102,6 +102,7 @@ public class BoardService {
     }
 
     public String registerUser(User user) {
+
     try{
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);

@@ -28,7 +28,6 @@ import com.web.board.entity.Board;
 import com.web.board.entity.User;
 import com.web.board.service.BoardService;
 
-// 예외처리는 컨트롤러가 맡아서 처리하게 한다.
 @Controller
 public class BoardController {
  
@@ -118,7 +117,7 @@ public class BoardController {
         return "boardview";
         } else 
         model.addAttribute("board", board);
-        return "boardview2";
+        return "boardview";
     }
 
     @PostMapping("/board/delete") //delete url을 지정하면 service단의 id 삭제 밑 redirect 완료

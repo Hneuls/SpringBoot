@@ -74,31 +74,40 @@
         .button-delete:hover {
             background-color: #c82333;
         }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 th:text="${board.title}"></h1>
-        <div class="content">
-            <p th:text="${board.content}"></p>
+        <h1 th:text="${board.title}">Title</h1>
+        <p th:if="${board.author != null}" style="font-size: 14px; color: #666;" th:text="'작성자: ' + ${board.author.nickname}">작성자 정보</p>
+        <p th:if="${board.author == null}" style="font-size: 14px; color: #666;">작성자 정보가 없습니다.</p>
+                <div class="content">
+            <p th:text="${board.content}">Content</p>
+        </div>
+
+        <div class="image-container">
+            <img th:src="@{${board.filepath}}" alt="Photo"/>
         </div>
 
         <div class="button-group">
-            <form th:action="@{${board.filepath}}" method="get" style="display:inline;">
-                <button class="button" type="submit">사진 보기</button>
-            </form>
-            
             <div th:if="${currentUser != null && board != null && board.author != null && currentUser.id == board.author.id}">
-            <form th:action="@{/board/delete}" method="post" style="display:inline;">
-                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-                <input type="hidden" name="id" th:value="${board.id}"/>
-                <button class="button button-delete" type="submit">글 삭제</button>
-            </form>
+                <form th:action="@{/board/delete}" method="post" style="display:inline;">
+                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                    <input type="hidden" name="id" th:value="${board.id}"/>
+                    <button class="button button-delete" type="submit">글 삭제</button>
+                </form>
 
-            <form th:action="@{/board/modify/{id}(id=${board.id})}" method="get" style="display:inline;">
-                <button class="button button-secondary" type="submit">글 수정</button>
-            </form>
+                <form th:action="@{/board/modify/{id}(id=${board.id})}" method="get" style="display:inline;">
+                    <button class="button button-secondary" type="submit">글 수정</button>
+                </form>
             </div>
+            <a href="#" onclick="history.back();" class="button">돌아가기</a>
         </div>
     </div>
 </body>

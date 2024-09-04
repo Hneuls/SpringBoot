@@ -40,12 +40,12 @@ public class BoardController {
     }
 
     
-    @GetMapping("/board/write") //localhost:8080/board/write 주소로 접속하면 boardwrite 페이지를 보여줌
+    @GetMapping("/board/write")
     public String boardWriteForm() {
         
         return "boardwrite";
     }
-    @PostMapping("/board/writepro") // 파일과 제목을 넣어야만 하는 넣지않으면 오류메시지
+    @PostMapping("/board/writepro") 
     public String boardWritePro(Board board, RedirectAttributes redirectAttributes, @RequestParam("file") MultipartFile file, Principal principal) throws Exception { 
         try { 
             CustomUserDetails userDetails = (CustomUserDetails) ((Authentication) principal).getPrincipal();
@@ -62,7 +62,7 @@ public class BoardController {
         }
     }        // String message = (result > 0) ? "글 작성이 완료되었습니다" : "글 작성에 실패하였습니다";
         // String searchUrl = (result > 0) ? "board/list" : "board/write";
-        // 기존 model로 넘겨서 프론트단에서 redirect를 처리하면 리다이렉트가 클라이언트 측에서 발생하기 때문에, 사용자는 추가적인 네트워크 왕복 시간을 경험할 수 있습니다. 서버에서 바로 리다이렉트하는 것보다 약간 비효율적
+        // 기존 model로 넘겨서 프론트단에서 redirect를 처리하면 리다이렉트가 클라이언트 측에서 발생하기 때문에, 사용자는 추가적인 네트워크 왕복 시간을 경험할 수 있고, 서버에서 바로 리다이렉트하는 것보다 약간 비효율적
         // model.addAttribute("message", message);
         // model.addAttribute("searchUrl", searchUrl);
 
@@ -100,9 +100,9 @@ public class BoardController {
     @GetMapping("/board/view") // localhost:8080/board/view?id=1 < id 매개변수에 전달하기 위해 url을 변경 
     public String boardView(Model model, @RequestParam Integer id, Principal principal) { // html에 넘겨줄 땐 model 사용
 
-// Principal 객체는 현재 인증된 사용자에 대한 정보를 담고 있는 객체로 로그인한 사용자 정보를 담고 있습니다
-// Authentication 객체는 Spring Security에서 현재 인증 정보를 담고 있습니다. 이 객체는 로그인한 사용자, 사용자의 권한, 인증 상태 등의 정보를 제공합니다.
-// Principal을 Authentication으로 변환하는 이유는 Authentication이 Principal보다 더 많은 인증 관련 정보를 포함하고 있기 때문입니다.
+// Principal 객체는 현재 인증된 사용자에 대한 정보를 담고 있는 객체로 로그인한 사용자 정보를 담고 있음
+// Authentication 객체는 Spring Security에서 현재 인증 정보를 담고 있고, 이 객체는 로그인한 사용자, 사용자의 권한, 인증 상태 등의 정보를 제공
+// Principal을 Authentication으로 변환하는 이유는 Authentication이 Principal보다 더 많은 인증 관련 정보를 포함하고 있기 때문
         Board board = boardService.boardView(id);
         CustomUserDetails userDetails = (CustomUserDetails)((Authentication) principal).getPrincipal();
         User currentUser = userDetails.getUser();
@@ -139,7 +139,7 @@ public class BoardController {
     public String boardUpdate(@PathVariable("id") Integer id, Board board, MultipartFile file) throws Exception {
 
     Board boardTemp = boardService.boardView(id);
-    boardTemp.setTitle(board.getTitle()); // html 폼에서 사용자가 입력한 정보를 얻어와서 수정함
+    boardTemp.setTitle(board.getTitle()); // html 폼에서 사용자가 입력한 정보를 얻어와서 수정
     boardTemp.setContent(board.getContent());
 
     boardService.update(boardTemp, file); // html 폼에서 file이 매개변수에 들어와서 사진이 업데이트됨

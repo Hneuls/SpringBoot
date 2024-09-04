@@ -21,10 +21,10 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                                         throws IOException, ServletException {
 
         HttpSession session = request.getSession(); 
-        // 현재 HTTP 요청에 대한 세션을 가져옵니다. 만약 요청에 세션이 없다면, 새로운 세션을 생성합니다.
+        // 현재 HTTP 요청에 대한 세션을 가져옵니다. 만약 요청에 세션이 없다면, 새로운 세션을 생성
         // 세션으로 사용자의 정보를 세션에 저장하며 이후에도 이 정보를 사용하기 위함
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        // 인증 성공 후의 Authentication 객체에서 Principal을 가져옵니다. Principal은 인증된 사용자에 대한 정보를 담고 있는 객체입니다.
+        // 인증 성공 후의 Authentication 객체에서 Principal을 가져옵니다. Principal은 인증된 사용자에 대한 정보를 담고 있는 객체
         session.setAttribute("nickname", userDetails.getNickname());
 
         response.sendRedirect("/board/list"); // 로그인 성공 후 리다이렉트 할 경로

@@ -26,7 +26,7 @@ public class Board {
 
     @ManyToOne // 여러개의 게시글을 하나의 사용자와 연관이 있을 수 있다.
     @JoinColumn(name = "user_id") // Board 테이블에 user_id 컬럼이 생성되고, 이 컬럼은 User 테이블의 id 컬럼을 참조함
-    // 이 설정을 통해 Board 객체는 User 객체를 참조할 수 있게 됩니다.
+    // 이 설정을 통해 Board 객체는 User 객체를 참조할 수 있게 됨
     // 데이터베이스의 외래 키와 기본 키를 자동으로 매핑하기 때문
     private User author;
 

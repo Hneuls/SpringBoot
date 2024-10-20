@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>회원 가입</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var isLoginIdAvailable = false;
+            var isNicknameAvailable = false;
+
+            // 아이디 중복 확인
+            $('#checkLoginId').click(function() {
+                var loginId = $('#loginId').val();
+                $.get('/user/check-login-id', { loginId: loginId }, function(response) {
+                    if (response.exists) {
+                        $('#loginIdMessage').text('중복된 아이디입니다.');
+                        isLoginIdAvailable = false; // 아이디 사용 불가
+                    } else {
+                        $('#loginIdMessage').text('사용 가능한 아이디입니다.');
+                        isLoginIdAvailable = true; // 아이디 사용 가능
+                    }
+                });
+            });
+
+            // 닉네임 중복 확인
+            $('#checkNickname').click(function() {
+                var nickname = $('#nickname').val();
+                $.get('/user/check-nickname', { nickname: nickname }, function(response) {
+                    if (response.exists) {
+                        $('#nicknameMessage').text('중복된 닉네임입니다.');
+                        isNicknameAvailable = false; // 닉네임 사용 불가
+                    } else {
+                        $('#nicknameMessage').text('사용 가능한 닉네임입니다.');
+                        isNicknameAvailable = true; // 닉네임 사용 가능
+                    }
+                });
+            });
+
+            // 폼 제출 전 검증
+            $('#registrationForm').submit(function(event) {
+                if (!isLoginIdAvailable || !isNicknameAvailable) {
+                    event.preventDefault(); // 폼 제출 방지
+                    alert('아이디와 닉네임의 중복 확인을 완료해주세요.'); // 경고 메시지
+                }
+            });
+        });
+    </script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f5;
+        padding: 20px;
+    }
+
+    h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    form {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    #loginIdMessage,
+    #nicknameMessage {
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+
+    #checkLoginId,
+    #checkNickname {
+        background-color: #007BFF;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    #checkLoginId:hover,
+    #checkNickname:hover {
+        background-color: #0056b3;
+    }
+</style>
+
+</head>
+<body>
+    <h1>회원 가입</h1>
+    
+    <form id="registrationForm" th:action="@{/board/register/go}" th:object="${user}" method="post">
+        <label for="loginId">아이디:</label>
+        <input type="text" id="loginId" th:field="*{loginId}" required />
+        <button type="button" id="checkLoginId">중복확인</button>
+        <span id="loginIdMessage" style="color:red;"></span>
+        <br />
+
+        <label for="nickname">닉네임:</label>
+        <input type="text" id="nickname" th:field="*{nickname}" required />
+        <button type="button" id="checkNickname">중복확인</button>
+        <span id="nicknameMessage" style="color:red;"></span>
+        <br />
+
+        <label for="password">비밀번호:</label>
+        <input type="password" id="password" th:field="*{password}" required />
+        <br />
+
+        <button type="submit">가입하기</button>
+    </form>
+
+    <div th:if="${message != null}">
+        <p th:text="${message}"></p>
+    </div>
+</body>
+</html>

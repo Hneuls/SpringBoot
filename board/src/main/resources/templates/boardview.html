@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세 페이지</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .content {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .button-group {
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            margin-right: 10px;
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .button-secondary {
+            background-color: #6c757d;
+        }
+
+        .button-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .button-delete {
+            background-color: #dc3545;
+        }
+
+        .button-delete:hover {
+            background-color: #c82333;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .like-container {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+         #like-icon {
+            cursor: pointer;
+            color: grey; /* 기본 색상 회색 */
+            transition: color 0.3s ease; /* 색상 변경 애니메이션 */
+            margin-right : 10px;
+        }
+
+        .liked #like-icon {
+            color: red; /* 좋아요 클릭 시 빨간색 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 th:text="${board.title}">Title</h1>
+        <p th:if="${board.author != null}" style="font-size: 14px; color: #666;" th:text="'작성자: ' + ${board.author.nickname}">작성자 정보</p>
+        <p th:if="${board.author == null}" style="font-size: 14px; color: #666;">작성자 정보가 없습니다.</p>
+                
+        <div class="content">
+            <p th:text="${board.content}">Content</p>
+        </div>
+
+        <div class="image-container">
+            <img th:src="@{${board.filepath}}" alt="Photo"/>
+        </div>
+
+        <!-- 좋아요 하트 모양과 좋아요 개수 -->
+        <div class="like-container" id="like-container">
+            <i class="fa fa-heart" id="like-icon" th:data-board-id="${board.id}"></i>
+            <span id="like-count" th:text="${board.likeCount}">0</span>
+        </div>
+        
+        <div class="button-group">
+            <div th:if="${currentUser != null && board != null && board.author != null && currentUser.id == board.author.id}">
+                <form th:action="@{/board/delete}" method="post" style="display:inline;">
+                    <input type="hidden" name="id" th:value="${board.id}"/>
+                    <button class="button button-delete" type="submit">글 삭제</button>
+                </form>
+
+                <form th:action="@{/board/modify/{id}(id=${board.id})}" method="get" style="display:inline;">
+                    <button class="button button-secondary" type="submit">글 수정</button>
+                </form>
+            </div>
+            <a href="#" onclick="history.back();" class="button">돌아가기</a>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            // 서버에서 전달된 isLikedBefore12 값을 사용
+            var isLikedBefore12 = [[${isLikedBefore12} ? 'true' : 'false']];
+            console.log("백엔드에서 반환된 isLikedBefore12 값: ", isLikedBefore12);
+            // 초기 로드 시 좋아요 상태 반영
+            if (isLikedBefore12 === 'true') {
+                $('#like-container').addClass('liked');  // 이미 좋아요를 눌렀으면 빨간 하트
+            } else {
+                $('#like-container').removeClass('liked');  // 좋아요를 안 눌렀으면 회색 하트
+            }
+    
+            // 좋아요 상태 변경 함수
+            function toggleLike(boardId) {
+                $.ajax({
+                    url: '/board/like/' + boardId,
+                    type: 'POST',
+                    success: function(response) {
+                        var isLiked = response.isLiked;  // 백엔드에서 반환된 좋아요 상태
+                        var likeCount = response.likeCount;
+    
+                        // 로그로 확인
+                    console.log("백엔드에서 반환된 isLiked 값: ", isLiked);
+
+                        // 좋아요 개수 업데이트
+                        $('#like-count').text(likeCount);
+    
+                        // 좋아요 상태에 따라 하트 모양 업데이트
+                        if (isLiked === true || isLiked === 'true') {
+                            $('#like-container').addClass('liked');  // 좋아요 상태일 때 빨간 하트
+                        } else {
+                            $('#like-container').removeClass('liked');  // 좋아요 취소 상태일 때 회색 하트
+                        }
+                    },
+                    error: function(error) {
+                        console.error('좋아요 처리 중 오류가 발생하였습니다.');
+                    }
+                });
+            }
+    
+            // 좋아요 아이콘 클릭 이벤트
+            $('#like-icon').on('click', function() {
+                var boardId = $(this).attr('data-board-id');
+                toggleLike(boardId);  // 클릭 시 좋아요 상태 토글
+            });
+        });
+    </script>
+    </body>
+</html>

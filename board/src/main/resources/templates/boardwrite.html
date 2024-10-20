@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시물 작성 폼</title>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var errorMessage = /*[[${errorMessage}]]*/ '';
+        if (errorMessage) {
+            alert(errorMessage);
+        }
+        /*]]>*/
+    </script>
+</head>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        padding: 20px;
+    }
+
+    .layout {
+        width: 500px;
+        margin: 0 auto;
+        margin-top: 50px;
+        background-color: #fff;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+
+    .layout h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .layout input[type="text"],
+    .layout textarea {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+        background-color: #f9f9f9;
+    }
+
+    .layout textarea {
+        min-height: 200px;
+        resize: vertical;
+    }
+
+    .layout input[type="file"] {
+        margin-top: 10px;
+        padding: 5px;
+    }
+
+    .layout button {
+        width: 100%;
+        padding: 12px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+
+    .layout button:hover {
+        background-color: #45a049;
+    }
+
+    .layout input[type="text"]:focus,
+    .layout textarea:focus,
+    .layout input[type="file"]:focus {
+        outline: none;
+        border-color: #4CAF50;
+        background-color: #e6f5ea;
+    }
+</style>
+
+<body>
+    <div class="layout">
+        <form action="/board/writepro" method="post" enctype="multipart/form-data">
+            <input name="title" type="text" placeholder="제목을 입력하세요">
+            <textarea name="content" placeholder="내용을 입력하세요"></textarea>
+            <input type="file" name="file">
+            <button type="submit">작성</button>
+        </form>
+    </div>
+</body>
+</html>

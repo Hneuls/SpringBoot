@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>게시글 리스트 페이지</title>
-</head>
 
     <style>
     /* 기본 레이아웃 및 색상 설정 */
@@ -172,14 +171,35 @@
         background: #f4f4f4;
         color: #333;
     }
+    .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            top: 30px; /* 상단에 위치하도록 수정 */
+            transform: translateX(-50%);
+            font-size: 17px;
+        }
+
+        .toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+    @keyframes fadein { from {top: 0; opacity: 0;}to{top: 30px; opacity:1;}}
+    @keyframes fadeout { from {top: 30px; opacity: 1;}to{top: 0; opacity:0;}}
 </style>
-
-
+</head>
 <body>
-            
+        <div id ="toast" class ="toast"></div>
     <div th:if="${isLoggedIn}">
         <p>환영합니다, <span th:text="${nickname}"></span>님!</p> <!-- 세션 사용 ${nickname}-->
-        <a href="/logout" class="logout-button">로그아웃</a>
+        <a href="#" onClick ="logout()" class="logout-button">로그아웃</a>
     </div>
 
     <div th:unless="${isLoggedIn}">
@@ -187,9 +207,7 @@
         <a href="/login" class="login-button">로그인</a>
     </div>
     
-
-
-    <div class="layout">
+    <div class="layout" id="boardContent">
         <table>
             <thead>
                 <tr>
@@ -201,7 +219,7 @@
                 <tr th:each="board : ${list.content}">
                     <td th:text="${board.id}">1</td>
                     <td>
-                        <a th:text="${board.title}" th:href="@{/board/{id}(id=${board.id})}"></a>
+                        <a th:href = "@{/board/{id}(id=${board.id})}" th:text="${board.title}"></a>
                     </td>
                 </tr>
             </tbody>
@@ -220,5 +238,79 @@
         <a href="/board/write" class="write-button">새 글 작성</a>
         <a href="/board/register" class="register-button">회원 가입</a>
     </div>
+
+    <script>
+        async function loadBoardList() {
+            console.log("Loading board list...");
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (jwtToken) {
+                try {
+                const response = await fetch('/board/list', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwtToken
+                    }
+                });
+                if (response.ok) {
+                    const content = await response.text();
+                    document.getElementById('boardContent').innerHTML = content;
+                    attachBoardLinks(); 
+                } else if (response.status === 401) {
+                    showToast('로그인이 필요합니다.');
+                    localStorage.removeItem('jwtToken');
+                    window.location.href = "/login";
+                }
+            } catch (error) {
+                console.error('error board list', error);
+                showToast('예상치 못한 오류가 발생하였습니다');
+            }
+            } else {
+                showToast('로그인이 필요합니다.');
+                window.location.href = "/login";
+            }
+        }
+
+        function attachBoardLinks() {
+            document.querySelectorAll('.board-link').forEach(link => {
+                link.addEventListener('click', event => {
+                    event.preventDefault();
+                    const boardId = event.target.getAttribute('data-id');
+                    loadBoardDetail(boardId);
+                });
+            });
+        }
+
+        async function loadBoardDetail(boardId) {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (jwtToken) {
+                const response = await fetch(`/board/${boardId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwtToken
+                    }
+                });
+                if (response.ok) {
+                    document.getElementById('boardContent').innerHTML = await response.text();
+                    attachBoardLinks();
+                } else {
+                    showToast('로그인이 필요합니다.');
+                    localStorage.removeItem('jwtToken');
+                    window.location.href = "/login";
+                }
+            } else {
+                showToast('로그인이 필요합니다.');
+                window.location.href = "/login";
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = "toast show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+    </script>
+    
 </body>
 </html>

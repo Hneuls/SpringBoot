@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,14 +21,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.web.board.config.CustomUserDetails;
+import com.web.board.config.JwtTokenProvider;
 import com.web.board.entity.Board;
 import com.web.board.entity.User;
+import com.web.board.repository.UserRepository;
 import com.web.board.service.BoardService;
 
 @Controller
@@ -36,6 +40,12 @@ public class BoardController {
     @Autowired
     private BoardService boardService;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private UserRepository userRepository;
+    
     @GetMapping("/")
     public String home() {
         return "redirect:/board/list";
@@ -47,22 +57,27 @@ public class BoardController {
         
         return "boardwrite";
     }
+    @CacheEvict(value = "boardListCache", allEntries = true)
     @PostMapping("/board/writepro") 
-    public String boardWritePro(Board board, RedirectAttributes redirectAttributes, @RequestParam("file") MultipartFile file, Principal principal) throws Exception { 
+    public String boardWritePro(Board board, RedirectAttributes redirectAttributes, @RequestParam("file") MultipartFile file, @RequestHeader(value= "Authorization", required = false) String token) throws Exception { 
         try { 
-            CustomUserDetails userDetails = (CustomUserDetails) ((Authentication) principal).getPrincipal();
-            User currentUser = userDetails.getUser();
-            boardService.write(board, file, currentUser);
-            return "redirect:/board/list";
-        } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage()); 
-            return "redirect:/board/write";  // redirectAttributes.addFlashAttribute를 사용하면 리다이렉트 이후 /write 페이지에서 "errorMessage" 속성을 사용할 수 있음
+            if(token != null && token.startsWith("Bearer ")) {
+                String jwtToken = token.substring(7);
+                String username = jwtTokenProvider.getUsername(jwtToken);
+                User currentUser = userRepository.findByLoginId(username).orElse(null);
+                if(currentUser != null) {
+                    boardService.write(board, file, currentUser);
+                    return "redirect:/board/list";
+                }
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다");
+            return "redirect:/login";
         } catch (Exception e) {
             e.printStackTrace();
-            redirectAttributes.addFlashAttribute("errorMessage", "서버 오류가 발생하였습니다."); 
-            return "redirect:/board/write";
-        }
-    }        // String message = (result > 0) ? "글 작성이 완료되었습니다" : "글 작성에 실패하였습니다";
+            redirectAttributes.addFlashAttribute("errorMessage", "서버 오류가 발생하였습니다.");
+            return "redirect:/board/write";  // redirectAttributes.addFlashAttribute를 사용하면 리다이렉트 이후 /write 페이지에서 "errorMessage" 속성을 사용할 수 있음
+        }  
+      }        // String message = (result > 0) ? "글 작성이 완료되었습니다" : "글 작성에 실패하였습니다";
         // String searchUrl = (result > 0) ? "board/list" : "board/write";
         // 기존 model로 넘겨서 프론트단에서 redirect를 처리하면 리다이렉트가 클라이언트 측에서 발생하기 때문에, 사용자는 추가적인 네트워크 왕복 시간을 경험할 수 있고, 서버에서 바로 리다이렉트하는 것보다 약간 비효율적
         // model.addAttribute("message", message);
@@ -70,16 +85,26 @@ public class BoardController {
 
     @GetMapping("/board/list")
     public String boardList(Model model, @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
-                            String searchKeyword, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+                            String searchKeyword, @RequestHeader(value = "Authorization", required = false) String token) {
         // sort : 정렬 기준 direction : 정렬 순서
 
-            Page<Board> list = null;
-            
-        if(searchKeyword == null || searchKeyword.trim().isEmpty()) {
-            list = boardService.boardList(pageable); // 전체 결과
-        } else {
-            list = boardService.boardSearchList(searchKeyword, pageable); 
+        if(token != null && token.startsWith("Bearer ")) {
+            String jwtToken = token.substring(7);
+            String username = jwtTokenProvider.getUsername(jwtToken);
+            String nickname = jwtTokenProvider.getNickname(jwtToken);
+        
+        if(username != null) {
+            model.addAttribute("isLoggedIn", true);
+            model.addAttribute("loginId", username);
+            model.addAttribute("nickname", nickname);
         }
+        } else {
+            model.addAttribute("isLoggedIn", false);
+        }
+            
+        Page<Board> list = (searchKeyword == null || searchKeyword.trim().isEmpty())
+            ? list = boardService.boardList(pageable) : boardService.boardSearchList(searchKeyword, pageable); 
+      
 
         
         int nowPage = list.getPageable().getPageNumber() + 1;
@@ -91,14 +116,10 @@ public class BoardController {
         model.addAttribute("endPage", endPage);
         model.addAttribute("list", list);
         
-        model.addAttribute("isLoggedIn", customUserDetails != null);
-        if (customUserDetails != null) {
-            model.addAttribute("loginId", customUserDetails.getLoginId());
-            model.addAttribute("nickname", customUserDetails.getNickname());
-        } 
         return "boardlist";
     }
 
+    @CacheEvict(value = "boardListCache", allEntries = true)
     @PostMapping("/board/delete") //delete url을 지정하면 service단의 id 삭제 밑 redirect 완료
     public String boardDelete(@RequestParam Integer id) {
         boardService.boardDelete(id);
@@ -114,6 +135,7 @@ public class BoardController {
         return "boardmodify";
     }
 
+    @CacheEvict(value = "boardListCache", allEntries = true)
     @PostMapping("/board/update/{id}")
     public String boardUpdate(@PathVariable("id") Integer id, Board board, MultipartFile file) throws Exception {
 
@@ -183,49 +205,60 @@ public class BoardController {
 
     @PostMapping("/board/like/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> likePost(@PathVariable("id") Integer boardId, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<Map<String, Object>> likePost(@PathVariable("id") Integer boardId, @RequestHeader(value = "Authorization", required = false) String token) {
+    
         Map<String, Object> response = new HashMap<>();
         boolean isLiked = false;
 
-        if(userDetails != null) {
-            User currentUser = (User) ((CustomUserDetails) userDetails).getUser();
+        if(token != null && token.startsWith("Bearer ")) {
+            String jwtToken = token.substring(7);
+            String username = jwtTokenProvider.getUsername(jwtToken);
+            User currentUser = userRepository.findByLoginId(username).orElse(null);
 
-            boolean isLikedBefore = boardService.isLikedByUser(boardId, currentUser);
-            // 좋아요를 눌렀을 때 상태를 변경하고 그 결과를 클라이언트에 전달하는 역할
-            response.put("isLikedBefore", isLikedBefore);
+            if(currentUser != null) {
+                boolean isLikedBefore = boardService.isLikedByUser(boardId, currentUser);
+                response.put("isLikedBefore", isLikedBefore);
 
-            isLiked = boardService.likeLogic(boardId, currentUser);
-            response.put("isLiked", isLiked);
-            System.out.println("좋아요 상태 변경 후 isLiked: " + isLiked + ", boardId: " + boardId + ", userId: " + currentUser.getId());
-
+                isLiked = boardService.likeLogic(boardId, currentUser);
+                response.put("isLiked", isLiked);
+            }
         } else {
             response.put("isLiked", false);
             response.put("isLikedBefore", false);
         }
-         
-        int likeCount = boardService.getLikeCount(boardId);
-        response.put("likeCount", likeCount);
+           int likeCount = boardService.getLikeCount(boardId);
+           response.put("likeCount", likeCount);
 
-        return ResponseEntity.ok(response);
-    }
+           return ResponseEntity.ok(response);   
+         }
 
     @GetMapping("/board/{id}")
-    public String getBoardDetails(@PathVariable("id") Integer boardId, Model model, @AuthenticationPrincipal UserDetails userDetails) {
+    public String getBoardDetails(@PathVariable("id") Integer boardId, Model model, @RequestHeader(value = "Authorization", required = false) String token) { 
         Board board = boardService.getBoardbyId(boardId);
         model.addAttribute("board", board);
 
-        if(userDetails != null) {
-            User currentUser = (User) ((CustomUserDetails) userDetails).getUser();
-            boolean isAuthor = board.getAuthor() != null && board.getAuthor().getId().equals(currentUser.getId());
+        if(token != null && token.startsWith("Bearer ")) {
+            
+            String jwtToken = token.substring(7);
+            String username = jwtTokenProvider.getUsername(jwtToken);
+            String nickname = jwtTokenProvider.getNickname(jwtToken);
 
-            if(isAuthor) {
-                model.addAttribute("currentUser", currentUser);
+            if(username != null) {
+                User currentUser = userRepository.findByLoginId(username).orElse(null);
+                if(currentUser != null) {
+                    boolean isAuthor = board.getAuthor() != null && board.getAuthor().getId().equals(currentUser.getId());
+
+                    if(isAuthor) {
+                        model.addAttribute("currentUser", currentUser);
+                    }
+
+                    boolean isLikedBefore12 = boardService.isLikedByUser(boardId, currentUser);
+                    model.addAttribute("isLikedBefore12", isLikedBefore12);
+                    model.addAttribute("nickname", nickname);
+                }
             }
-
-            boolean isLikedBefore12 = boardService.isLikedByUser(boardId, currentUser);
-            model.addAttribute("isLikedBefore12", isLikedBefore12);                
         } else {
-            model.addAttribute("isLikedBefore12", false);         
+            model.addAttribute("isLikedBefore", false);
         }
         return "boardview";
     }

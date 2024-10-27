@@ -1,5 +1,7 @@
 package com.web.board.entity;
 
+import java.io.Serializable;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,8 +12,8 @@ import lombok.Data;
 
 @Entity // 자바의 JPA에서 테이블을 의미
 @Data // @Getter / @Setter / @ToString / @EqualsAndHashCode / @RequiredArgsConstructor 를 합쳐놓은 어노테이션
-public class Board {
-
+public class Board implements Serializable { // Serializable 인터페이스 구현
+    private static final long serialVersionUID = 1L;
     @Id // primary key 의미
     @GeneratedValue(strategy = GenerationType.IDENTITY) // GenerationType.IDENTITY를 사용하면 Auto increment가 됨 
     private Integer id;

@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,13 +22,16 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class BoardService {
-
+    
     @Autowired
     private BoardRepository boardRepository;
+
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
+
     @Autowired
     private LikeRepository likeRepository;
 
@@ -83,6 +87,7 @@ public class BoardService {
     } 
 
     // 게시글 리스트 처리
+    @Cacheable(value = "boardListCache") // 캐시에 boardRepository.findAll(pageable)를 저장해놓고 그 캐시를 Redis에 저장
     public Page<Board> boardList(Pageable pageable) {
         return boardRepository.findAll(pageable); // 엔티티 클래스에 대한 모든 데이터를 조회, 반환값은 List 형태이며, T는 엔티티 클래스 모든 데이터를 조회하므로, 대용량의 데이터를 조회할 때는 성능 이슈가 발생할 수 있음.
     }  // pageable을 넘겨주면 페이지 정보와 사이즈 정보를 넘김
@@ -103,7 +108,7 @@ public class BoardService {
     }
 
     public Page<Board> boardSearchList(String searchKeyword, Pageable pageable) {
-        return boardRepository.findByTitleContaining(searchKeyword, pageable);
+        return boardRepository.searchByTitle(searchKeyword, pageable);
             
     }
 
